@@ -13,8 +13,15 @@ KAFKA_TOPIC = "ecommerce-events"
 HDFS_CONSUMER_GROUP = "hdfs-writer"
 HDFS_LOCALHOST = "http://localhost:9870"
 HDFS_BASE_PATH = "/mindmetrics/task5/data/ecommerce/events"
+
+# Keep Kafka polling and group membership tolerant of HDFS I/O latency.
 HDFS_BATCH_SIZE = 500
 HDFS_POLL_TIMEOUT_MS = 1000
+HDFS_MAX_POLL_INTERVAL_MS = 300_000
+HDFS_SESSION_TIMEOUT_MS = 60_000
+HDFS_HEARTBEAT_INTERVAL_MS = 20_000
+HDFS_REQUEST_TIMEOUT_MS = 60_000
+HDFS_RETRY_BACKOFF_MS = 1_000
 
 KAFKA_GROUP_ID_FLINK = "realtime-pipeline"
 
