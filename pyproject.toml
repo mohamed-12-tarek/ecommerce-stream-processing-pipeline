@@ -1,11 +1,12 @@
 [project]
 name = "finaltask"
 version = "0.1.0"
-description = "Add your description here"
+description = "End-to-end e-commerce streaming and batch data platform"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "apache-flink==2.3.0",
+    "hdfs>=2.7.3",
     "kafka-python>=3.0.11",
     "pyarrow>=16.1.0",
 ]
