@@ -336,6 +336,7 @@ dependencies = [
     { name = "hdfs" },
     { name = "kafka-python" },
     { name = "pyarrow" },
+    { name = "pyspark" },
 ]
 
 [package.metadata]
@@ -344,6 +345,7 @@ requires-dist = [
     { name = "hdfs", specifier = ">=2.7.3" },
     { name = "kafka-python", specifier = ">=3.0.11" },
     { name = "pyarrow", specifier = ">=16.1.0" },
+    { name = "pyspark", specifier = "==3.5.8" },
 ]
 
 [[package]]
@@ -748,6 +750,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/f3/91/9c6ee907786a473bf
 wheels = [
     { url = "https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl", hash = "sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d", size = 122781, upload-time = "2026-01-21T03:57:55.912Z" },
 ]
+
+[[package]]
+name = "pyspark"
+version = "3.5.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "py4j" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/80/5a/3806f44eb47387e8af803508cdd6bbc0df784febf4dc010700be04a1ff89/pyspark-3.5.8.tar.gz", hash = "sha256:54cca0767b21b40e3953ad1d30f8601c53abf9cbda763653289cdcfcac52313c", size = 317817299, upload-time = "2026-01-15T11:46:14.487Z" }
 
 [[package]]
 name = "python-dateutil"

@@ -1,6 +1,5 @@
 import tempfile
 from pathlib import Path
-
 import pyarrow as pa
 import pyarrow.parquet as pq
 from hdfs import InsecureClient
@@ -12,7 +11,7 @@ class HDFSWriter:
     def __init__(self, base_path: str, client: InsecureClient) -> None:
         self.base_path = base_path.rstrip("/")
         self.client = client
-        self.client.makedirs(self.base_path, permission=0o755)
+        self.client.makedirs(self.base_path, permission="755")
 
     def write_batch(self, events: list[dict]) -> None:
         if not events:

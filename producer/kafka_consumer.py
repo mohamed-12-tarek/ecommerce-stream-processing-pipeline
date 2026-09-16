@@ -1,8 +1,6 @@
 import json
-
 from kafka import KafkaConsumer
 from kafka.errors import KafkaTimeoutError
-
 from hdfs import InsecureClient
 
 from .config import (
@@ -53,17 +51,13 @@ def main() -> None:
         while True:
             records = consumer.poll(
                 timeout_ms=HDFS_POLL_TIMEOUT_MS,
-                max_records=HDFS_BATCH_SIZE,
+                max_records=HDFS_BATCH_SIZE
             )
 
             if not records:
                 continue
 
-            events = [
-                message.value
-                for messages in records.values()
-                for message in messages
-            ]
+            events = [message.value for messages in records.values() for message in messages]
 
             if not events:
                 continue
@@ -76,8 +70,8 @@ def main() -> None:
                 consumer.commit()
             except KafkaTimeoutError as exc:
                 print(
-                    "Kafka offset commit timed out after the HDFS write. "
-                    "The batch may be replayed on restart."
+                    """Kafka offset commit timed out after the HDFS write.
+                    The batch may be replayed on restart."""
                 )
                 raise exc
 
