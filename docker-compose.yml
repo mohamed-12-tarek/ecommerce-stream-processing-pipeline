@@ -1,0 +1,40 @@
+services:
+
+  kafka:
+    image: apache/kafka:4.3.1
+
+    container_name: kafka
+
+    ports:
+      - "9092:9092"
+
+    environment:
+
+      # Kafka runs in KRaft mode.
+      KAFKA_NODE_ID: 1
+
+      # This node acts as both broker and controller.
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # Internal communication between Kafka and its controller.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # Kafka listeners.
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+
+      # Address clients should use to connect to Kafka.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      # Protocol used by each listener.
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      # Which listener is used for controller communication.
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Replication settings for a single-broker development cluster.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      # Allow Kafka to automatically create topics.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
