@@ -1,16 +1,26 @@
 import json
+
 from kafka import KafkaConsumer
-from .config import(
+from kafka.errors import KafkaTimeoutError
+
+from hdfs import InsecureClient
+
+from .config import (
+    HDFS_BASE_PATH,
     HDFS_BATCH_SIZE,
     HDFS_CONSUMER_GROUP,
-    HDFS_POLL_TIMEOUT_MS,
+    HDFS_HEARTBEAT_INTERVAL_MS,
     HDFS_LOCALHOST,
+    HDFS_MAX_POLL_INTERVAL_MS,
+    HDFS_POLL_TIMEOUT_MS,
+    HDFS_REQUEST_TIMEOUT_MS,
+    HDFS_RETRY_BACKOFF_MS,
+    HDFS_SESSION_TIMEOUT_MS,
     KAFKA_BOOTSTRAP_SERVERS,
     KAFKA_TOPIC,
-    HDFS_BASE_PATH
 )
 from .hdfs_writer import HDFSWriter
-from hdfs import InsecureClient
+
 
 def create_consumer() -> KafkaConsumer:
     return KafkaConsumer(
@@ -19,8 +29,13 @@ def create_consumer() -> KafkaConsumer:
         auto_offset_reset="earliest",
         enable_auto_commit=False,
         max_poll_records=HDFS_BATCH_SIZE,
+        max_poll_interval_ms=HDFS_MAX_POLL_INTERVAL_MS,
+        session_timeout_ms=HDFS_SESSION_TIMEOUT_MS,
+        heartbeat_interval_ms=HDFS_HEARTBEAT_INTERVAL_MS,
+        request_timeout_ms=HDFS_REQUEST_TIMEOUT_MS,
+        retry_backoff_ms=HDFS_RETRY_BACKOFF_MS,
         value_deserializer=lambda value: json.loads(value.decode("utf-8")),
-        key_deserializer=lambda key: (key.decode("utf-8") if key is not None else None)
+        key_deserializer=lambda key: key.decode("utf-8") if key is not None else None,
     )
 
 
@@ -28,7 +43,6 @@ def main() -> None:
     consumer = create_consumer()
     consumer.subscribe([KAFKA_TOPIC])
     hdfs_client = InsecureClient(HDFS_LOCALHOST, user="mohamed")
-
     writer = HDFSWriter(base_path=HDFS_BASE_PATH, client=hdfs_client)
 
     print("HDFS Consumer started.")
@@ -37,22 +51,35 @@ def main() -> None:
 
     try:
         while True:
-            records = consumer.poll(timeout_ms=HDFS_POLL_TIMEOUT_MS, max_records=HDFS_BATCH_SIZE)
+            records = consumer.poll(
+                timeout_ms=HDFS_POLL_TIMEOUT_MS,
+                max_records=HDFS_BATCH_SIZE,
+            )
 
             if not records:
                 continue
 
-            events = []
-
-            for messages in records.values():
-                for message in messages:
-                    events.append(message.value)
+            events = [
+                message.value
+                for messages in records.values()
+                for message in messages
+            ]
 
             if not events:
                 continue
 
+            # Write first, then commit the Kafka offsets. If the commit fails,
+            # the batch may be delivered again, which is safer than losing data.
             writer.write_batch(events)
-            consumer.commit()
+
+            try:
+                consumer.commit()
+            except KafkaTimeoutError as exc:
+                print(
+                    "Kafka offset commit timed out after the HDFS write. "
+                    "The batch may be replayed on restart."
+                )
+                raise exc
 
             print(f"Written {len(events)} events to HDFS.")
 
