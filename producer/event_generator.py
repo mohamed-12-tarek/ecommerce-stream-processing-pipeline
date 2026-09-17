@@ -5,11 +5,11 @@ from datetime import datetime, timedelta, timezone
 from .catalog import ProductCatalog
 from .config import (
     CATEGORIES,
-    MAX_SESSION_ACTIONS,
     MAX_SESSION_GAP_MINUTES,
+    MAX_SESSION_ACTIONS,
     MIN_SESSION_ACTIONS,
     MIN_SESSION_GAP_MINUTES,
-    SIMULATION_START_DATE,
+    SIMULATION_START_DATE
 )
 from .models import Event, EventType, UserProfile
 
@@ -102,7 +102,7 @@ class EcommerceEventGenerator:
             activity_level = rng.choices(
                 [0.4, 1.0, 1.8],
                 weights=[0.30, 0.55, 0.15],
-                k=1,
+                k=1
             )[0]
 
             base_purchase_probability = rng.uniform(0.05, 0.25)

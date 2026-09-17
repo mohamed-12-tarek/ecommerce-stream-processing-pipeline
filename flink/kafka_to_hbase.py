@@ -56,12 +56,6 @@ JSON_DESERIALIZER = (
 
 
 class HBaseMapFunction(MapFunction):
-    """Write each Kafka event to HBase using the Python HappyBase client.
-
-    HBase writes are keyed by event_id, making retries idempotent for the
-    event row. The HBase Thrift server must be available on localhost:9090.
-    """
-
     def __init__(self) -> None:
         self.writer: HBaseWriter | None = None
 
@@ -124,8 +118,6 @@ def main() -> None:
         "Kafka Ecommerce Events",
     )
 
-    # Python-only HBase integration. The final print is intentionally kept as
-    # a visible terminal sink so the job has a concrete downstream operator.
     stream.map(
         HBaseMapFunction(),
         output_type=ROW_TYPE,

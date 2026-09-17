@@ -1,6 +1,5 @@
 import random
 import time
-from datetime import datetime
 
 from .catalog import ProductCatalog
 from .config import (
@@ -12,31 +11,20 @@ from .config import (
     NUM_USERS,
 )
 from .event_generator import EcommerceEventGenerator
-from .hdfs_state import get_latest_event_timestamp
 from .kafka_producer import EcommerceKafkaProducer
 
 
 def main() -> None:
     catalog = ProductCatalog(num_products=NUM_PRODUCTS)
-    latest_timestamp = get_latest_event_timestamp()
-
-    if latest_timestamp is None:
-        print("HDFS contains no events.")
-        print("Starting simulation from the configured start date.")
-        
-    else:
-        print(f"Latest event in HDFS: {latest_timestamp.isoformat()}")
-        print(f"Resuming simulation from: {latest_timestamp.isoformat()}")
 
     generator = EcommerceEventGenerator(
         num_users=NUM_USERS,
         catalog=catalog,
-        start_time=latest_timestamp
     )
 
     producer = EcommerceKafkaProducer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        topic=KAFKA_TOPIC
+        topic=KAFKA_TOPIC,
     )
 
     user_ids = list(generator.users.keys())
@@ -55,7 +43,12 @@ def main() -> None:
 
     try:
         while True:
-            user_id = random.choices(user_ids, weights=user_weights, k=1)[0]
+            user_id = random.choices(
+                user_ids,
+                weights=user_weights,
+                k=1,
+            )[0]
+
             events = generator.generate_session(user_id=user_id)
 
             for event in events:
@@ -68,7 +61,12 @@ def main() -> None:
                     f"time={event.timestamp}"
                 )
 
-                time.sleep(random.uniform(MIN_EVENT_DELAY,MAX_EVENT_DELAY))
+                time.sleep(
+                    random.uniform(
+                        MIN_EVENT_DELAY,
+                        MAX_EVENT_DELAY,
+                    )
+                )
 
     except KeyboardInterrupt:
         print("\nStopping producer...")
@@ -76,6 +74,7 @@ def main() -> None:
     finally:
         producer.close()
         print("Producer closed.")
+
 
 if __name__ == "__main__":
     main()

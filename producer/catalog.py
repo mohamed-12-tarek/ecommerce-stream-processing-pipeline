@@ -1,5 +1,4 @@
 import random
-
 from .config import CATEGORIES
 from .models import Product
 
