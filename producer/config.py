@@ -7,6 +7,12 @@ MAX_EVENT_DELAY = 0.8
 MIN_SESSION_ACTIONS = 3
 MAX_SESSION_ACTIONS = 15
 
+# The producer runs in real time, but event timestamps use a simulated
+# clock so the dataset can represent many days while the producer is running.
+SIMULATION_START_DATE = "2026-08-18T00:00:00+00:00"
+MIN_SESSION_GAP_MINUTES = 15
+MAX_SESSION_GAP_MINUTES = 240
+
 KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
 KAFKA_TOPIC = "ecommerce-events"
 
