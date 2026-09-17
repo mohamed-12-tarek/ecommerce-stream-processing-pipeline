@@ -17,6 +17,7 @@ class UserProfile:
     user_id: int
     preferred_category: str
     purchase_probability: float
+    activity_level: float
 
 
 @dataclass(frozen=True)
