@@ -1,61 +1,44 @@
-import json
-import random
-import time
-from dataclasses import asdict
+from datetime import datetime
 
-from producer.config import (
-    MAX_EVENT_DELAY,
-    MIN_EVENT_DELAY,
-    NUM_PRODUCTS,
-    NUM_USERS,
-)
 from producer.catalog import ProductCatalog
+from producer.config import NUM_PRODUCTS, NUM_USERS
 from producer.event_generator import EcommerceEventGenerator
 
 
 def main() -> None:
-
-    catalog = ProductCatalog(
-        num_products=NUM_PRODUCTS
-    )
-
+    catalog = ProductCatalog(num_products=NUM_PRODUCTS)
     generator = EcommerceEventGenerator(
         num_users=NUM_USERS,
         catalog=catalog,
     )
 
-    print("E-Commerce Event Generator")
-    print("===========================")
-    print(f"Users: {NUM_USERS:,}")
-    print(f"Products: {NUM_PRODUCTS:,}")
-    print("Generating events...\n")
+    all_events = []
 
-    while True:
+    for _ in range(300):
+        all_events.extend(generator.generate_session())
 
-        user_id = random.randint(
-            1,
-            NUM_USERS,
-        )
+    timestamps = [
+        datetime.fromisoformat(event.timestamp)
+        for event in all_events
+    ]
 
-        events = generator.generate_session(
-            user_id=user_id
-        )
+    event_types = {event.event_type for event in all_events}
+    span_days = (max(timestamps) - min(timestamps)).total_seconds() / 86_400
 
-        for event in events:
+    assert len(all_events) > 1_000
+    assert span_days > 3, f"Timeline span is too short: {span_days:.2f} days"
+    assert "session_start" in event_types
+    assert "session_end" in event_types
+    assert "product_view" in event_types
+    assert "add_to_cart" in event_types
+    assert "search" in event_types
 
-            event_json = json.dumps(
-                asdict(event),
-                ensure_ascii=False,
-            )
-
-            print(event_json)
-
-            time.sleep(
-                random.uniform(
-                    MIN_EVENT_DELAY,
-                    MAX_EVENT_DELAY,
-                )
-            )
+    print("Generator smoke test passed.")
+    print(f"Events generated: {len(all_events):,}")
+    print(f"Timeline span: {span_days:.2f} days")
+    print(f"Event types: {sorted(event_types)}")
+    print(f"First timestamp: {min(timestamps).isoformat()}")
+    print(f"Last timestamp:  {max(timestamps).isoformat()}")
 
 
 if __name__ == "__main__":
