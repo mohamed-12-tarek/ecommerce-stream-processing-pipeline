@@ -1,5 +1,13 @@
-from pyflink.common import Configuration
-from pyflink.table import EnvironmentSettings, TableEnvironment
+from pyflink.common import Configuration, WatermarkStrategy
+from pyflink.common.typeinfo import Types
+from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.datastream.connectors.kafka import (
+    KafkaOffsetsInitializer,
+    KafkaSource,
+)
+from pyflink.datastream.formats.json import JsonRowDeserializationSchema
+from pyflink.datastream.functions import SinkFunction
+from pyflink.java_gateway import get_gateway
 
 
 PROJECT_DIR = "/home/mohamed/MyData/Tasks/FinalTask"
@@ -15,115 +23,85 @@ KAFKA_CLIENT = (
 )
 
 
-def main():
-    # ---------------------------------------------------------
-    # 1. Make Flink load the external connectors
-    # ---------------------------------------------------------
+ROW_TYPE = Types.ROW_NAMED(
+    [
+        "event_id",
+        "event_type",
+        "user_id",
+        "session_id",
+        "product_id",
+        "category",
+        "quantity",
+        "price",
+        "search_query",
+        "timestamp",
+    ],
+    [
+        Types.STRING(),
+        Types.STRING(),
+        Types.LONG(),
+        Types.STRING(),
+        Types.LONG(),
+        Types.STRING(),
+        Types.LONG(),
+        Types.DOUBLE(),
+        Types.STRING(),
+        Types.STRING(),
+    ],
+)
 
+JSON_DESERIALIZER = (
+    JsonRowDeserializationSchema.builder()
+    .type_info(ROW_TYPE)
+    .build()
+)
+
+
+def main() -> None:
     config = Configuration()
 
-    config.set_string(
-        "pipeline.jars",
-        f"{KAFKA_CONNECTOR};"
-        f"{KAFKA_CLIENT};"
+    env = StreamExecutionEnvironment.get_execution_environment(
+        configuration=config
+    )
+    env.set_parallelism(1)
+
+    env.add_jars(
+        KAFKA_CONNECTOR,
+        KAFKA_CLIENT,
     )
 
-    settings = (
-        EnvironmentSettings
-        .new_instance()
-        .in_streaming_mode()
-        .with_configuration(config)
+    source = (
+        KafkaSource.builder()
+        .set_bootstrap_servers("localhost:9092")
+        .set_topics("ecommerce-events")
+        .set_group_id("flink-hbase-sink")
+        .set_starting_offsets(KafkaOffsetsInitializer.latest())
+        .set_value_only_deserializer(JSON_DESERIALIZER)
         .build()
     )
 
-    table_env = TableEnvironment.create(settings)
+    stream = env.from_source(
+        source,
+        WatermarkStrategy.no_watermarks(),
+        "Kafka Ecommerce Events",
+    )
 
-    # ---------------------------------------------------------
-    # 2. Kafka source
-    # ---------------------------------------------------------
-
-    table_env.execute_sql(
-        """
-        CREATE TABLE kafka_events (
-            event_id STRING,
-            event_type STRING,
-            user_id BIGINT,
-            session_id STRING,
-            product_id BIGINT,
-            category STRING,
-            quantity BIGINT,
-            price DOUBLE,
-            search_query STRING,
-            `timestamp` STRING
-        ) WITH (
-            'connector' = 'kafka',
-            'topic' = 'ecommerce-events',
-            'properties.bootstrap.servers' = 'localhost:9092',
-            'properties.group.id' = 'flink-hbase-sink',
-            'scan.startup.mode' = 'latest-offset',
-            'format' = 'json'
+    # The custom sink is installed into FLINK_HOME/lib by
+    # build_hbase_sink.sh so Py4J can construct it before job submission.
+    gateway = get_gateway()
+    sink_class = gateway.jvm.flink.hbase.HBaseEventSink
+    hbase_sink = SinkFunction(
+        sink_class(
+            "localhost",
+            2181,
+            "ecommerce_events",
+            "event",
         )
-        """
     )
 
-    # ---------------------------------------------------------
-    # 3. HBase sink
-    # ---------------------------------------------------------
+    stream.add_sink(hbase_sink).name("HBase Ecommerce Events Sink")
 
-    table_env.execute_sql(
-        """
-        CREATE TABLE hbase_events (
-            event_id STRING,
-
-            event ROW<
-                event_type STRING,
-                user_id BIGINT,
-                session_id STRING,
-                product_id BIGINT,
-                category STRING,
-                quantity BIGINT,
-                price DOUBLE,
-                search_query STRING,
-                `timestamp` STRING
-            >,
-
-            PRIMARY KEY (event_id) NOT ENFORCED
-        ) WITH (
-            'connector' = 'hbase-2.2',
-            'table-name' = 'ecommerce_events',
-            'zookeeper.quorum' = 'localhost:2181',
-            'sink.parallelism' = '1'
-        )
-        """
-    )
-
-    # ---------------------------------------------------------
-    # 4. Kafka -> HBase
-    # ---------------------------------------------------------
-
-    result = table_env.execute_sql(
-        """
-        INSERT INTO hbase_events
-        SELECT
-            event_id,
-
-            ROW(
-                event_type,
-                user_id,
-                session_id,
-                product_id,
-                category,
-                quantity,
-                price,
-                search_query,
-                `timestamp`
-            )
-
-        FROM kafka_events
-        """
-    )
-
-    result.wait()
+    env.execute("Kafka To HBase")
 
 
 if __name__ == "__main__":
