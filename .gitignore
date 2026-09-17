@@ -31,3 +31,7 @@ env/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Flink build artifacts
+flink/build/
+flink/lib/hbase-event-sink.jar
