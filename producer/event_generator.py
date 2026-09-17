@@ -1,14 +1,17 @@
 import random
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from .catalog import ProductCatalog
 from .config import (
     CATEGORIES,
     MAX_SESSION_ACTIONS,
+    MAX_SESSION_GAP_MINUTES,
     MIN_SESSION_ACTIONS,
+    MIN_SESSION_GAP_MINUTES,
+    SIMULATION_START_DATE,
 )
 from .models import Event, EventType, UserProfile
-from .catalog import ProductCatalog
 
 
 class EcommerceEventGenerator:
@@ -86,51 +89,54 @@ class EcommerceEventGenerator:
         num_users: int,
         catalog: ProductCatalog,
     ) -> None:
-
         self.catalog = catalog
-
-        self.users = self._generate_users(
-            num_users
-        )
+        self.current_time = datetime.fromisoformat(SIMULATION_START_DATE)
+        self.users = self._generate_users(num_users)
 
     def _generate_users(
         self,
         num_users: int,
     ) -> dict[int, UserProfile]:
-
         users = {}
 
         for user_id in range(1, num_users + 1):
+            # Profiles create different behavioral patterns for the ML stage.
+            # Higher activity users get longer sessions more often, while
+            # purchase probability controls conversion behavior.
+            activity_level = random.choices(
+                [0.4, 1.0, 1.8],
+                weights=[0.30, 0.55, 0.15],
+                k=1,
+            )[0]
+
+            base_purchase_probability = random.uniform(0.05, 0.25)
+            purchase_probability = min(
+                0.75,
+                base_purchase_probability * activity_level,
+            )
 
             users[user_id] = UserProfile(
                 user_id=user_id,
-                preferred_category=random.choice(
-                    CATEGORIES
-                ),
-                purchase_probability=random.uniform(
-                    0.05,
-                    0.40,
-                ),
+                preferred_category=random.choice(CATEGORIES),
+                purchase_probability=purchase_probability,
+                activity_level=activity_level,
             )
 
         return users
 
     @staticmethod
     def _event_id() -> str:
-
         return str(uuid.uuid4())
 
     @staticmethod
     def _session_id() -> str:
-
         return str(uuid.uuid4())
 
-    @staticmethod
-    def _timestamp() -> str:
+    def _advance_time(self, minutes: int) -> None:
+        self.current_time += timedelta(minutes=minutes)
 
-        return datetime.now(
-            timezone.utc
-        ).isoformat()
+    def _timestamp(self) -> str:
+        return self.current_time.astimezone(timezone.utc).isoformat()
 
     def _create_event(
         self,
@@ -143,39 +149,28 @@ class EcommerceEventGenerator:
         price: float | None = None,
         search_query: str | None = None,
     ) -> Event:
-
-        return Event(
+        event = Event(
             event_id=self._event_id(),
             event_type=event_type.value,
-
             user_id=user_id,
             session_id=session_id,
-
             product_id=product_id,
             category=category,
-
             quantity=quantity,
             price=price,
-
             search_query=search_query,
-
             timestamp=self._timestamp(),
         )
+        self._advance_time(random.randint(1, 5))
+        return event
 
     def _search(
         self,
         user_id: int,
         session_id: str,
     ) -> Event:
-
         user = self.users[user_id]
-
-        query = random.choice(
-            self.SEARCH_TERMS[
-                user.preferred_category
-            ]
-        )
-
+        query = random.choice(self.SEARCH_TERMS[user.preferred_category])
         return self._create_event(
             event_type=EventType.SEARCH,
             user_id=user_id,
@@ -189,22 +184,18 @@ class EcommerceEventGenerator:
         user_id: int,
         session_id: str,
     ) -> Event:
-
         user = self.users[user_id]
-
         category_products = [
             product
             for product in self.catalog.products.values()
-            if product.category
-            == user.preferred_category
+            if product.category == user.preferred_category
         ]
 
-        if category_products:
-            product = random.choice(
-                category_products
-            )
-        else:
-            product = self.catalog.random_product()
+        product = (
+            random.choice(category_products)
+            if category_products
+            else self.catalog.random_product()
+        )
 
         return self._create_event(
             event_type=EventType.PRODUCT_VIEW,
@@ -220,11 +211,7 @@ class EcommerceEventGenerator:
         session_id: str,
         product_id: int,
     ) -> Event:
-
-        product = self.catalog.get_product(
-            product_id
-        )
-
+        product = self.catalog.get_product(product_id)
         return self._create_event(
             event_type=EventType.ADD_TO_CART,
             user_id=user_id,
@@ -240,11 +227,7 @@ class EcommerceEventGenerator:
         session_id: str,
         product_id: int,
     ) -> Event:
-
-        product = self.catalog.get_product(
-            product_id
-        )
-
+        product = self.catalog.get_product(product_id)
         return self._create_event(
             event_type=EventType.REMOVE_FROM_CART,
             user_id=user_id,
@@ -259,11 +242,7 @@ class EcommerceEventGenerator:
         session_id: str,
         product_id: int,
     ) -> Event:
-
-        product = self.catalog.get_product(
-            product_id
-        )
-
+        product = self.catalog.get_product(product_id)
         return self._create_event(
             event_type=EventType.PURCHASE,
             user_id=user_id,
@@ -279,98 +258,65 @@ class EcommerceEventGenerator:
         user_id: int,
         session_id: str,
     ) -> Event:
-
         return self._create_event(
             event_type=EventType.SESSION_START,
             user_id=user_id,
             session_id=session_id,
         )
 
-
     def _session_end(
         self,
         user_id: int,
         session_id: str,
     ) -> Event:
-
         return self._create_event(
             event_type=EventType.SESSION_END,
             user_id=user_id,
             session_id=session_id,
         )
 
-
     def generate_session(
         self,
         user_id: int | None = None,
     ) -> list[Event]:
-
         if user_id is None:
-            user_id = random.choice(
-                list(self.users.keys())
-            )
-
-        session_id = self._session_id()
-
-        events: list[Event] = []
-
-        cart: list[int] = []
-
-        viewed_products: list[int] = []
+            user_id = random.choice(list(self.users.keys()))
 
         user = self.users[user_id]
+        session_id = self._session_id()
+        events: list[Event] = []
+        cart: list[int] = []
+        viewed_products: list[int] = []
 
-        events.append(
-            self._session_start(
-                user_id,
-                session_id,
-            )
-        )
+        events.append(self._session_start(user_id, session_id))
 
-        number_of_actions = random.randint(
+        base_actions = random.randint(
             MIN_SESSION_ACTIONS,
             MAX_SESSION_ACTIONS,
         )
+        number_of_actions = max(
+            MIN_SESSION_ACTIONS,
+            min(
+                MAX_SESSION_ACTIONS,
+                round(base_actions * user.activity_level),
+            ),
+        )
 
         for _ in range(number_of_actions):
-
             action = random.random()
 
-            # Search
             if action < 0.20:
+                events.append(self._search(user_id, session_id))
 
-                events.append(
-                    self._search(
-                        user_id,
-                        session_id,
-                    )
-                )
-
-            # Product View
             elif action < 0.65:
-
-                event = self._product_view(
-                    user_id,
-                    session_id,
-                )
-
+                event = self._product_view(user_id, session_id)
                 events.append(event)
-
                 if event.product_id is not None:
+                    viewed_products.append(event.product_id)
 
-                    viewed_products.append(
-                        event.product_id
-                    )
-
-            # Add To Cart
             elif action < 0.85:
-
                 if viewed_products:
-
-                    product_id = random.choice(
-                        viewed_products
-                    )
-
+                    product_id = random.choice(viewed_products)
                     events.append(
                         self._add_to_cart(
                             user_id,
@@ -378,20 +324,12 @@ class EcommerceEventGenerator:
                             product_id,
                         )
                     )
-
                     if product_id not in cart:
-
                         cart.append(product_id)
 
-            # Remove From Cart
             elif action < 0.93:
-
                 if cart:
-
-                    product_id = random.choice(
-                        cart
-                    )
-
+                    product_id = random.choice(cart)
                     events.append(
                         self._remove_from_cart(
                             user_id,
@@ -399,18 +337,11 @@ class EcommerceEventGenerator:
                             product_id,
                         )
                     )
-
                     cart.remove(product_id)
 
-            # Purchase
             else:
-
                 if cart and random.random() < user.purchase_probability:
-
-                    product_id = random.choice(
-                        cart
-                    )
-
+                    product_id = random.choice(cart)
                     events.append(
                         self._purchase(
                             user_id,
@@ -418,14 +349,16 @@ class EcommerceEventGenerator:
                             product_id,
                         )
                     )
-
                     cart.remove(product_id)
 
+        events.append(self._session_end(user_id, session_id))
 
-        events.append(
-            self._session_end(
-                user_id,
-                session_id,
+        # Advance the simulated clock between sessions. The producer itself
+        # can remain real-time while timestamps move across many days.
+        self._advance_time(
+            random.randint(
+                MIN_SESSION_GAP_MINUTES,
+                MAX_SESSION_GAP_MINUTES,
             )
         )
 
