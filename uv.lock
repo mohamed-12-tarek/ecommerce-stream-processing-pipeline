@@ -49,7 +49,7 @@ wheels = [
 
 [[package]]
 name = "apache-flink"
-version = "2.3.0"
+version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apache-beam" },
@@ -69,20 +69,20 @@ dependencies = [
     { name = "requests" },
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/6a/0c944e1cb9d66e86900d8e1f04bbf17394f4701ba5ddbc5a7198b4447ed1/apache_flink-2.3.0.tar.gz", hash = "sha256:47ded5aea434b4b6db3e010cbd6893afcde3eda36cbb07e0260f868f56d370f7", size = 1710704, upload-time = "2026-06-22T01:42:44.991Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/68/ebaddf5ed167d67de692aec47ecdbd2b20ce7923ba0191c4cec5e1200e80/apache_flink-2.2.1.tar.gz", hash = "sha256:4f282f520dac147a9cbc92ce0db04544c9731adcce594c1cf6a3ce9d4e737095", size = 1698528, upload-time = "2026-05-15T13:49:38.29Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bc/29/f9c17808f6bb0527fffbeda4969aaf28745b7a03ddaa814e5ca3626ffb86/apache_flink-2.3.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:561a5ca1a1505d1f9ac13971e43810fd235cddbc5ef9fbc642d9d31e29c46719", size = 2669265, upload-time = "2026-06-22T01:28:09.913Z" },
-    { url = "https://files.pythonhosted.org/packages/26/06/5e4bdbde40c9dec62eb5101c662a5099a9f6fee57b4aa1868850cadc91b5/apache_flink-2.3.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:12240243e83e03c702e5a0f52d66cb703fbfa525303a01b061950458cebb721b", size = 2648921, upload-time = "2026-06-22T01:28:17.071Z" },
-    { url = "https://files.pythonhosted.org/packages/85/e0/0cdeb70d7b862439b9fd350c6183b36dc29defb6875e4d9118d82e6be552/apache_flink-2.3.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c0608b3b5f57e252c2c26f7f963d7a1b5ba664172d6f76e8df237a4f159fbff3", size = 2886842, upload-time = "2026-06-22T01:28:22.991Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/b7/8391ab8abe17fc5afdebd57fd568c4d5da9404a35da35b60004030d81a92/apache_flink-2.2.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:990e187ecc8061eff81467920fd0cf9d30bb47b1b6c6143b7f8a07cab1a9aa0f", size = 2652797, upload-time = "2026-05-11T10:48:22.196Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/7a/29f860ce38e0e5badf3010f3bdf8d24986e9c7adf88b8aeeece815902afa/apache_flink-2.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:ee1cc61e0a33fe437c70a0508a4848ac371e3c97f70c4d71871272d712e6469e", size = 2629683, upload-time = "2026-05-11T10:48:25.944Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/bb/c4603c395734edab8ebacc435ea09f50a324900767344a069d9f29a3522b/apache_flink-2.2.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5fab3a13e7cffd63c81af8d8250ac5bdc4418ab7995443aff5695689f37607d5", size = 2868062, upload-time = "2026-05-11T10:48:29.728Z" },
 ]
 
 [[package]]
 name = "apache-flink-libraries"
-version = "2.3.0"
+version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/28/18/a14423ca106f9200c11a41ff6c32b43e217eb0e063d8d4baeba50d95e611/apache_flink_libraries-2.3.0.tar.gz", hash = "sha256:570bf8831d3c1336311e924e97119e52d8842e5485a4a7709ff9a92db709b006", size = 329008299, upload-time = "2026-06-22T01:31:20.057Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b8/2c/14808bef075a611bc0d6ad19bddade9c3375587486236f41cb4cdc87f8d0/apache_flink_libraries-2.2.1.tar.gz", hash = "sha256:eec27ffa86d01184de7f5ab668c479c83cdb75ebc7fba8091307da4f1a9d3348", size = 312504331, upload-time = "2026-05-15T13:49:10.784Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/33/e4ee83e79da52516632a768a54380e5c4e7e505f16d4f56591d65fcd7e6c/apache_flink_libraries-2.3.0-py2.py3-none-any.whl", hash = "sha256:38ece876553286b3a285cf344c2d2038f8a7ca10da5df54d5107250386d64151", size = 329139814, upload-time = "2026-06-22T01:19:05.541Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/92/45c039bbc685a194c61ecccb3367457f855579123c330252c3eda4f90e4c/apache_flink_libraries-2.2.1-py2.py3-none-any.whl", hash = "sha256:74dc5546fbd9add8fbcdf1222a237e09491f9b80296241aef8676ec56f8e686e", size = 312587297, upload-time = "2026-05-15T13:55:02.154Z" },
 ]
 
 [[package]]
@@ -333,6 +333,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "apache-flink" },
+    { name = "apache-flink-libraries" },
     { name = "hdfs" },
     { name = "kafka-python" },
     { name = "pyarrow" },
@@ -341,7 +342,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apache-flink", specifier = "==2.3.0" },
+    { name = "apache-flink", specifier = "==2.2.1" },
+    { name = "apache-flink-libraries", specifier = "==2.2.1" },
     { name = "hdfs", specifier = ">=2.7.3" },
     { name = "kafka-python", specifier = ">=3.0.11" },
     { name = "pyarrow", specifier = ">=16.1.0" },

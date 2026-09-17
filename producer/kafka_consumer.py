@@ -62,8 +62,6 @@ def main() -> None:
             if not events:
                 continue
 
-            # Write first, then commit the Kafka offsets. If the commit fails,
-            # the batch may be delivered again, which is safer than losing data.
             writer.write_batch(events)
 
             try:

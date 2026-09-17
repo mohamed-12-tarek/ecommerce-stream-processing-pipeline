@@ -7,6 +7,7 @@ VALID_EVENT_TYPES = [
     "session_end",
     "product_view",
     "add_to_cart",
+    "remove_from_cart",
     "purchase",
     "search",
 ]
@@ -18,6 +19,7 @@ VALID_EVENT_TYPES = [
 # session_end	    user_id, session_id
 # product_view	    user_id, session_id, product_id, category
 # add_to_cart	    user_id, session_id, product_id, category, quantity
+# remove_from_cart  user_id, session_id, product_id, category
 # purchase	        user_id, session_id, product_id, category, quantity, price
 # search	        user_id, session_id, category, search_query
 
@@ -50,6 +52,14 @@ def clean_events(df: DataFrame) -> DataFrame:
                 F.col("product_id").isNotNull()
                 & F.col("category").isNotNull()
                 & F.col("quantity").isNotNull()
+            )
+        )
+        
+        .filter(
+            (F.col("event_type") != "remove_from_cart")
+            | (
+                F.col("product_id").isNotNull()
+                & F.col("category").isNotNull()
             )
         )
 

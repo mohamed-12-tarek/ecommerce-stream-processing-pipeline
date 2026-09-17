@@ -3,7 +3,6 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 from hdfs import InsecureClient
-
 from .schema import EVENT_SCHEMA
 
 
@@ -30,12 +29,6 @@ class HDFSWriter:
 
     @staticmethod
     def _events_to_table(events: list[dict]) -> pa.Table:
-        """Convert a batch to the canonical event schema.
-
-        The schema is explicit so every Parquet file written by this consumer
-        has identical column types. This prevents schema drift between batches
-        from breaking downstream Spark reads.
-        """
         return pa.Table.from_pylist(events, schema=EVENT_SCHEMA)
 
     def _upload_to_hdfs(self, local_path: Path) -> None:

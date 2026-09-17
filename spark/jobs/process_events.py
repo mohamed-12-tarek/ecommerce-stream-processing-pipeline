@@ -1,67 +1,56 @@
 from pyspark.sql import functions as F
 
+from ..config import PROCESSED_PATH
 from ..ingestion.read_events import read_events
 from ..session import create_spark_session
-from ..transformations.clean_events import (
-    VALID_EVENT_TYPES,
-    clean_events,
-)
+from ..transformations.clean_events import clean_events
+from ..transformations.transform_events import transform_events
 
 
 def main() -> None:
     spark = create_spark_session()
 
     try:
-        df = read_events(spark)
-        raw_count = df.count()
+        # 1. Read raw events
+        raw_df = read_events(spark)
 
-        print(f"No.Rows [Raw Data]: {raw_count}")
-        print("No of raws deleted for multiple reasons")
+        raw_count = raw_df.count()
+        print(f"Raw rows: {raw_count}")
 
-        missing_event_id = df.filter(F.col("event_id").isNull()).count()
-        missing_user_id = df.filter(F.col("user_id").isNull()).count()
-        missing_session_id = df.filter(F.col("session_id").isNull()).count()
-        invalid_event_type = df.filter(~F.col("event_type").isin(VALID_EVENT_TYPES)).count()
+        # 2. Clean
+        clean_df = clean_events(raw_df)
 
-        invalid_quantity = df.filter(
-            F.col("quantity").isNotNull() 
-            & (F.col("quantity") <= 0)
-        ).count()
+        clean_count = clean_df.count()
+        print(f"Clean rows: {clean_count}")
+        print(f"Removed rows: {raw_count - clean_count}")
 
-        invalid_price = df.filter(
-            F.col("price").isNotNull()
-            & (F.col("price") <= 0)
-        ).count()
+        # 3. Transform
+        transformed_df = transform_events(clean_df)
 
-        duplicate_event_ids = (
-            df
-            .groupBy("event_id")
+        # 4. Basic inspection
+        print("\n=== Processed Schema ===")
+        transformed_df.printSchema()
+
+        print("\n=== Event Counts ===")
+        (
+            transformed_df
+            .groupBy("event_type")
             .count()
-            .filter(F.col("count") > 1)
-            .count()
+            .orderBy(F.desc("count"))
+            .show()
         )
 
-        print(f"Missing event_id: {missing_event_id}")
-        print(f"Missing user_id: {missing_user_id}")
-        print(f"Missing session_id: {missing_session_id}")
-        print(f"Invalid event_type: {invalid_event_type}")
-        print(f"Invalid quantity: {invalid_quantity}")
-        print(f"Invalid price: {invalid_price}")
-        print(f"Duplicate event_ids: {duplicate_event_ids}")
+        # 5. Write processed data
+        (
+            transformed_df
+            .repartition("event_date")
+            .write
+            .mode("overwrite")
+            .partitionBy("event_date")
+            .parquet(PROCESSED_PATH)
+        )
 
-        clean_df = clean_events(df)
-        clean_count = clean_df.count()
-        removed_count = raw_count - clean_count
-
-        print(f"\nRaw rows: {raw_count}")
-        print(f"Clean rows: {clean_count}")
-        print(f"Removed rows: {removed_count}\n")
-
-        print("Clean Schema")
-        clean_df.printSchema()
-
-        print("\nClean Data Sample")
-        clean_df.show(20, truncate=False)
+        print(f"\nProcessed data written to: {PROCESSED_PATH}")
 
     finally:
         spark.stop()
